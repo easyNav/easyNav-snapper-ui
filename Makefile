@@ -21,7 +21,7 @@ setup:
 test: unit
 
 unit:
-	@coverage run --branch `which nosetests` -vv --with-yanc -s tests/
+	@coverage run --branch `which nosetests` -vv -s tests/
 	@coverage report -m --fail-under=80
 
 # show coverage in html format
@@ -32,6 +32,10 @@ coverage-html: unit
 # run tests against all supported python versions
 tox:
 	@tox
+
+# Run ui
+ui:
+	@python easyNav_snapper_ui/snapperWidget.py
 
 #docs:
 	#@cd easyNav_snapper_ui/docs && make html && open _build/html/index.html

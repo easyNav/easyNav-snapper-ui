@@ -39,6 +39,13 @@ class SnapperWidget(Gtk.Window):
         sd.start()
 
 
+    def _updateBField(self, x,y,z,intensity):
+        self.builder.get_object('bField_x').set_text(str(x))
+        self.builder.get_object('bField_y').set_text(str(y))
+        self.builder.get_object('bField_z').set_text(str(z))
+        self.builder.get_object('bField_norm').set_text(str(intensity))
+        
+
 
     def _attachHandlers(self):
         """Event listeners 
@@ -48,13 +55,10 @@ class SnapperWidget(Gtk.Window):
         def onDataHandler(x,y,z,intensity):
             """ Event callback for serial data 
             """
-            logging.info('Serial Daemon: New Data!')
-            self.builder.get_object('bField_x').set_text(str(x))
-            self.builder.get_object('bField_y').set_text(str(y))
-            self.builder.get_object('bField_z').set_text(str(z))
-            self.builder.get_object('bField_norm').set_text(str(intensity))
+            # logging.info('Serial Daemon: New Data!')
+            GObject.idle_add(self._updateBField, x,y,z,intensity)
 
-            print (x,y,z,intensity)
+            # print (x,y,z,intensity)
 
 
 

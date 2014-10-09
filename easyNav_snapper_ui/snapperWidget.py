@@ -10,8 +10,11 @@
 
 
 from gi.repository import Gtk 
+import logging
+import smokesignal
 
 from easyNav_snapper import Snapper
+from SerialDaemon import SerialDaemon
 
 
 class SnapperWidget(Gtk.Window):
@@ -27,6 +30,25 @@ class SnapperWidget(Gtk.Window):
         self.saveFilepath = None
 
 
+        ## For SerialDaemon stuff
+        sd = self.sd = SerialDaemon()
+        self._attachHandlers()
+        sd.start()
+
+
+    def _attachHandlers(self):
+        """Event listeners 
+        """
+        ## TODO: Does not trigger when GTK starts.  Maybe try fork?
+        @smokesignal.on('onData')
+        def onDataHandler(x,y,z,intensity):
+            """ Event callback for serial data 
+            """
+            logging.info('Serial Daemon: New Data!')
+            print (x,y,z,intensity)
+
+
+
     def buttonWriteNameToFile_clicked(self, widget):
         print("File write code...")
 
@@ -34,6 +56,7 @@ class SnapperWidget(Gtk.Window):
     def on_window1_destroy(self, *args):
         """ Closes the main program
         """
+        self.sd.stop()
         Gtk.main_quit()
 
 
@@ -123,5 +146,14 @@ class SnapperWidget(Gtk.Window):
 
 
 if __name__ == "__main__":
+    def configLogging():
+        logging.getLogger('').handlers = []
+
+        logging.basicConfig(
+            # filename = "a.log",
+            # filemode="w",
+            level = logging.DEBUG)
+
+    configLogging()
     app = SnapperWidget()
     Gtk.main()

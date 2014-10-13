@@ -39,7 +39,7 @@ class SnapperWidget(Gtk.Window):
 
         ## For wifi stuff 
         self.networksLock = threading.Lock() # make wifi data atomic
-        swd = self.swd = SensorWifiDaemon()
+        swd = self.swd = SensorWifiDaemon(interval=1.5)
 
         ## Attach data handlers
         self._attachHandlers()
@@ -310,6 +310,7 @@ class SnapperWidget(Gtk.Window):
         ## Get data from atomic self.networks
         self.networksLock.acquire()
         networkData = self.networks
+        print networkData
         self.networksLock.release()
 
         ## Get combined data 
@@ -321,6 +322,8 @@ class SnapperWidget(Gtk.Window):
                 item[k] = combinedData[k]
 
         prediction = self.snapper.predict(item)
+
+        logging.info('Predicted: %s' % item)
 
         self.builder.get_object('statusbar1').push(0, 'The prediction is: %s' % prediction)
 

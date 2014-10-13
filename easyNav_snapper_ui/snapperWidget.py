@@ -11,6 +11,7 @@
 
 from gi.repository import Gtk, GObject
 import logging
+import threading
 import smokesignal
 
 from easyNav_snapper import Snapper
@@ -37,6 +38,7 @@ class SnapperWidget(Gtk.Window):
         sd = self.sd = SerialDaemon()
 
         ## For wifi stuff 
+        self.networksLock = threading.Lock() # make wifi data atomic
         swd = self.swd = SensorWifiDaemon()
 
         ## Attach data handlers
@@ -81,7 +83,7 @@ class SnapperWidget(Gtk.Window):
 
 
     def on_treeview3_cursor_changed(self, args):
-        print 'selected'
+        pass
 
 
     def on_btnDelete_clicked(self, args):
@@ -121,8 +123,11 @@ class SnapperWidget(Gtk.Window):
             for n in networks:
                 essid = str(n['Address']) 
                 result[essid] = int(n['Quality'])
-            print result
+
+            ## Write data to atomic self.networks
+            self.networksLock.acquire()
             self.networks = result
+            self.networksLock.release()
 
 
 
@@ -165,9 +170,9 @@ class SnapperWidget(Gtk.Window):
             self.populateTreeView()
 
             self.builder.get_object('statusbar1').push(0, 'File %s loaded.' % filename)
-            print chooser_dialog.get_filename(), 'selected'
+
         elif response == Gtk.ResponseType.CANCEL:
-            print 'Closed, no files selected'
+            pass
         chooser_dialog.destroy()
 
 
@@ -197,10 +202,9 @@ class SnapperWidget(Gtk.Window):
             self.snapper.save(filename)
 
             self.builder.get_object('statusbar1').push(0, 'File %s loaded.' % filename)
-            print chooser_dialog.get_filename(), 'selected'
 
         elif response == Gtk.ResponseType.CANCEL:
-            print 'Closed, no files selected'
+            pass
         chooser_dialog.destroy()
 
 
@@ -229,10 +233,9 @@ class SnapperWidget(Gtk.Window):
             self.snapper.export(filename)
 
             self.builder.get_object('statusbar1').push(0, 'File %s loaded.' % filename)
-            print chooser_dialog.get_filename(), 'selected'
 
         elif response == Gtk.ResponseType.CANCEL:
-            print 'Closed, no files selected'
+            pass
         chooser_dialog.destroy()
 
 
@@ -247,8 +250,6 @@ class SnapperWidget(Gtk.Window):
         bFieldMagnitude = float(self.builder.get_object('bField_norm').get_text())
         locId = int(self.builder.get_object('locId').get_text())
 
-        print bFieldMagnitude, locId
-
 
         ## Get B Field Data
         bFieldData = {
@@ -256,7 +257,10 @@ class SnapperWidget(Gtk.Window):
         }
 
         ## Get network data
+        ## Get data from atomic self.networks
+        self.networksLock.acquire()
         networkData = self.networks
+        self.networksLock.release()
 
         ## Get combined data 
         combinedData = dict(bFieldData.items() + networkData.items())
@@ -274,7 +278,6 @@ class SnapperWidget(Gtk.Window):
                                                         bFieldMagnitude))
         # show in table
         idx = len(self.snapper.data) - 1
-        print itemDict['uuid']
         self.store.append([item['target'], str(item['data']), str(itemDict['uuid'])])
 
 
@@ -304,7 +307,10 @@ class SnapperWidget(Gtk.Window):
         }
 
         ## Get network data
+        ## Get data from atomic self.networks
+        self.networksLock.acquire()
         networkData = self.networks
+        self.networksLock.release()
 
         ## Get combined data 
         combinedData = dict(bFieldData.items() + networkData.items())

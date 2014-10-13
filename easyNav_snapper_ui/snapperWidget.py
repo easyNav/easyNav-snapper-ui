@@ -15,6 +15,7 @@ import smokesignal
 
 from easyNav_snapper import Snapper
 from SerialDaemon import SerialDaemon
+from easyNav_sensors_wifi import SensorWifiDaemon
 
 
 GObject.threads_init()
@@ -34,8 +35,14 @@ class SnapperWidget(Gtk.Window):
 
         ## For SerialDaemon stuff
         sd = self.sd = SerialDaemon()
+
+        ## For wifi stuff 
+        swd = self.swd = SensorWifiDaemon()
+
+        ## Attach data handlers
         self._attachHandlers()
         sd.start()
+        swd.start()
 
 
         ## for the store
@@ -106,6 +113,18 @@ class SnapperWidget(Gtk.Window):
 
             # print (x,y,z,intensity)
 
+        @smokesignal.on('onNetworkData')
+        def onNetworkDataHandler(networks):
+            """Event callback for wifi data 
+            """
+            result = {}
+            for n in networks:
+                essid = str(n['Address']) 
+                result[essid] = int(n['Quality'])
+            print result
+            self.networks = result
+
+
 
 
     def buttonWriteNameToFile_clicked(self, widget):
@@ -116,6 +135,7 @@ class SnapperWidget(Gtk.Window):
         """ Closes the main program
         """
         self.sd.stop()
+        self.swd.stop()
         Gtk.main_quit()
 
 
@@ -229,11 +249,22 @@ class SnapperWidget(Gtk.Window):
 
         print bFieldMagnitude, locId
 
+
+        ## Get B Field Data
+        bFieldData = {
+            'bField': bFieldMagnitude
+        }
+
+        ## Get network data
+        networkData = self.networks
+
+        ## Get combined data 
+        combinedData = dict(bFieldData.items() + networkData.items())
+
+
         item = {
             'target': locId,
-            'data': {
-                'bField': bFieldMagnitude
-            }
+            'data': combinedData
         }
 
         itemDict = self.snapper.append(item)
@@ -259,10 +290,32 @@ class SnapperWidget(Gtk.Window):
     def on_btnPredict_clicked(self, args):
         """ Predict button 
         """
+
+        ## Populate test item vector with zeroes first
+        item = {}
+        keys = self.snapper.getKeys()
+        for k in keys:
+            item[k] = 0
+
+        ## Get B Field Data
         bFieldMagnitude = float(self.builder.get_object('bField_norm').get_text())
-        prediction = self.snapper.predict({
+        bFieldData = {
             'bField': bFieldMagnitude
-        })
+        }
+
+        ## Get network data
+        networkData = self.networks
+
+        ## Get combined data 
+        combinedData = dict(bFieldData.items() + networkData.items())
+
+        ## Merge combined data
+        for k in keys:
+            if k in combinedData:
+                item[k] = combinedData[k]
+
+        prediction = self.snapper.predict(item)
+
         self.builder.get_object('statusbar1').push(0, 'The prediction is: %s' % prediction)
 
 

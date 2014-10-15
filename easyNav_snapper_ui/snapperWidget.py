@@ -39,7 +39,7 @@ class SnapperWidget(Gtk.Window):
 
         ## For wifi stuff 
         self.networksLock = threading.Lock() # make wifi data atomic
-        swd = self.swd = SensorWifiDaemon(interval=1.5)
+        swd = self.swd = SensorWifiDaemon(interval=1.0, interface='wlan0')
 
         ## Attach data handlers
         self._attachHandlers()
@@ -51,6 +51,16 @@ class SnapperWidget(Gtk.Window):
         self.store = Gtk.ListStore(int, str, str)
         tree = self.builder.get_object('treeview3')
         tree.set_model(self.store)
+
+
+        ## for B field details.  This is needed to prevent the delay observed on reading
+        ## from text field.
+        self.bField = {
+        'x': 0,
+        'y': 0,
+        'z': 0,
+        'intensity': 0
+        }
 
 
         renderer = Gtk.CellRendererText()
@@ -110,7 +120,14 @@ class SnapperWidget(Gtk.Window):
         def onDataHandler(x,y,z,intensity):
             """ Event callback for serial data 
             """
-            GObject.idle_add(self._updateBField, x,y,z,intensity)
+            self.bField = {
+            'x': x,
+            'y': y,
+            'z': z,
+            'intensity': intensity
+            }
+            ## TODO: Remove the display.  might slow down system.
+            # GObject.idle_add(self._updateBField, x,y,z,intensity)
             # logging.info('Serial Daemon: New Data!')
 
             # print (x,y,z,intensity)
@@ -232,11 +249,21 @@ class SnapperWidget(Gtk.Window):
             # Save information from snapper 
             self.snapper.export(filename)
 
-            self.builder.get_object('statusbar1').push(0, 'File %s loaded.' % filename)
+            self.builder.get_object('statusbar1').push(0, 'SVMLight File %s exported.' % filename)
 
         elif response == Gtk.ResponseType.CANCEL:
             pass
         chooser_dialog.destroy()
+
+
+    def on_btnWifiUpdate_clicked(self, args):
+        """ Button to update wifi interval and port 
+        """
+        wifiInterval = float(self.builder.get_object('wifiInterval').get_text())
+        wifiPort = str(self.builder.get_object('wifiPort').get_text())
+        self.swd.updateConfig(wifiInterval, wifiPort)
+        self.builder.get_object('statusbar1').push(
+            0, 'Updated WIFI: port=%s interval=%s' % (wifiPort, wifiInterval))
 
 
 
@@ -244,10 +271,15 @@ class SnapperWidget(Gtk.Window):
     def on_btnAdd_clicked(self, args):
         """ Add a new Entry
         """
-        bFieldX = float(self.builder.get_object('bField_x').get_text())
-        bFieldY = float(self.builder.get_object('bField_y').get_text())
-        bFieldZ = float(self.builder.get_object('bField_z').get_text())
-        bFieldMagnitude = float(self.builder.get_object('bField_norm').get_text())
+        # bFieldX = float(self.builder.get_object('bField_x').get_text())
+        # bFieldY = float(self.builder.get_object('bField_y').get_text())
+        # bFieldZ = float(self.builder.get_object('bField_z').get_text())
+        # bFieldMagnitude = float(self.builder.get_object('bField_norm').get_text())
+        ## Use the B field var instead of text boxes to reduce lag
+        bFieldX = self.bField['x']
+        bFieldY = self.bField['y']
+        bFieldZ = self.bField['z']
+        bFieldMagnitude = self.bField['intensity']
         locId = int(self.builder.get_object('locId').get_text())
 
 
@@ -336,7 +368,8 @@ class SnapperWidget(Gtk.Window):
             item[k] = 0
 
         ## Get B Field Data
-        bFieldMagnitude = float(self.builder.get_object('bField_norm').get_text())
+        # bFieldMagnitude = float(self.builder.get_object('bField_norm').get_text())
+        bFieldMagnitude = self.bField['intensity']
         bFieldData = {
             'bField': bFieldMagnitude
         }

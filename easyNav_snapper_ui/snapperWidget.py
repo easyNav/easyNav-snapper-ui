@@ -110,8 +110,8 @@ class SnapperWidget(Gtk.Window):
         def onDataHandler(x,y,z,intensity):
             """ Event callback for serial data 
             """
-            # logging.info('Serial Daemon: New Data!')
             GObject.idle_add(self._updateBField, x,y,z,intensity)
+            # logging.info('Serial Daemon: New Data!')
 
             # print (x,y,z,intensity)
 
@@ -286,8 +286,43 @@ class SnapperWidget(Gtk.Window):
         """ Train button 
         """
         neighbors = int(self.builder.get_object('entryNeighbors').get_text())
-        self.snapper.train(neighbors)
-        self.builder.get_object('statusbar1').push(0, 'Trained model.')
+
+        # Train using KNN -----
+        # self.snapper.train(neighbors)
+        # Train using SVM -----
+
+        C=int(self.builder.get_object('entryNeighbors').get_text())
+        cache_size=int(self.builder.get_object('svmCache').get_text())
+        class_weight=None
+        coef0=0.0
+        degree=3
+        gamma=float(self.builder.get_object('svmGamma').get_text())
+        kernel=str(self.builder.get_object('svmKernel').get_text())
+        max_iter=-1
+        probability=False
+        random_state=None
+        shrinking=True
+        tol=float(self.builder.get_object('svmTol').get_text())
+        verbose=False
+
+        self.snapper.trainSVM(
+            C=C,
+            cache_size=cache_size, 
+            class_weight=class_weight,
+            coef0=coef0, 
+            degree=degree, 
+            gamma=gamma, 
+            kernel=kernel, 
+            max_iter=max_iter,
+            probability=probability, 
+            random_state=random_state, 
+            shrinking=shrinking, 
+            tol=tol, 
+            verbose=verbose)
+
+        self.builder.get_object('statusbar1').push(
+            0, 'Trained model with C=%s cache=%s gamma=%s ker=%s tol=%s' % 
+            (C, cache_size, gamma, kernel, tol ))
 
 
     def on_btnPredict_clicked(self, args):

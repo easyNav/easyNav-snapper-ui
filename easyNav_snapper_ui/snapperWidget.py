@@ -282,7 +282,7 @@ class SnapperWidget(Gtk.Window):
         def runThread():
             while(self._isCollecting):
                 self.addNewEntry()
-                time.sleep(0.5)
+                time.sleep(1)
                 print 'tick..'
             print 'stopped thread.'
 
@@ -350,10 +350,10 @@ class SnapperWidget(Gtk.Window):
         neighbors = int(self.builder.get_object('entryNeighbors').get_text())
 
         # Train using KNN -----
-        # self.snapper.train(neighbors)
+        self.snapper.train(neighbors)
         # Train using SVM -----
 
-        C=int(self.builder.get_object('entryNeighbors').get_text())
+        C=int(self.builder.get_object('svmC').get_text())
         cache_size=int(self.builder.get_object('svmCache').get_text())
         class_weight=None
         coef0=0.0
@@ -367,24 +367,24 @@ class SnapperWidget(Gtk.Window):
         tol=float(self.builder.get_object('svmTol').get_text())
         verbose=False
 
-        self.snapper.trainSVM(
-            C=C,
-            cache_size=cache_size, 
-            class_weight=class_weight,
-            coef0=coef0, 
-            degree=degree, 
-            gamma=gamma, 
-            kernel=kernel, 
-            max_iter=max_iter,
-            probability=probability, 
-            random_state=random_state, 
-            shrinking=shrinking, 
-            tol=tol, 
-            verbose=verbose)
+        # self.snapper.trainSVM(
+        #     C=C,
+        #     cache_size=cache_size, 
+        #     class_weight=class_weight,
+        #     coef0=coef0, 
+        #     degree=degree, 
+        #     gamma=gamma, 
+        #     kernel=kernel, 
+        #     max_iter=max_iter,
+        #     probability=probability, 
+        #     random_state=random_state, 
+        #     shrinking=shrinking, 
+        #     tol=tol, 
+        #     verbose=verbose)
 
-        self.builder.get_object('statusbar1').push(
-            0, 'Trained model with C=%s cache=%s gamma=%s ker=%s tol=%s' % 
-            (C, cache_size, gamma, kernel, tol ))
+        # self.builder.get_object('statusbar1').push(
+        #     0, 'Trained model with C=%s cache=%s gamma=%s ker=%s tol=%s' % 
+        #     (C, cache_size, gamma, kernel, tol ))
 
 
     def on_btnPredict_clicked(self, args):
@@ -408,8 +408,8 @@ class SnapperWidget(Gtk.Window):
         ## Get data from atomic self.networks
         self.networksLock.acquire()
         networkData = self.networks
-        print networkData
         self.networksLock.release()
+        # print networkData
 
         ## Get combined data 
         combinedData = dict(bFieldData.items() + networkData.items())

@@ -13,6 +13,7 @@ from gi.repository import Gtk, GObject
 import logging
 import threading
 import smokesignal
+import time
 
 from easyNav_snapper import Snapper
 from SerialDaemon import SerialDaemon
@@ -24,8 +25,11 @@ GObject.threads_init()
 
 class SnapperWidget(Gtk.Window):
     def __init__(self):
+        import os
+        print os.getcwd()
 
-        filename = "snapTemplate.glade"
+        ## File accessed from parent folder.
+        filename = "easyNav_snapper_ui/snapTemplate.glade"
         self.builder = Gtk.Builder()
         self.builder.add_from_file(filename)
         self.builder.connect_signals(self)
@@ -45,6 +49,9 @@ class SnapperWidget(Gtk.Window):
         self._attachHandlers()
         sd.start()
         swd.start()
+
+        ## For collection start / stop button and actions
+        self._isCollecting = False
 
 
         ## for the store
@@ -271,6 +278,28 @@ class SnapperWidget(Gtk.Window):
     def on_btnAdd_clicked(self, args):
         """ Add a new Entry
         """
+        ## Run tick thread
+        def runThread():
+            while(self._isCollecting):
+                self.addNewEntry()
+                time.sleep(0.5)
+                print 'tick..'
+            print 'stopped thread.'
+
+        self._isCollecting = not self._isCollecting
+
+        if (self._isCollecting):
+            self.builder.get_object('btnAdd').set_label('Stop')
+            ## Start data collection
+            self._threadCollect = threading.Thread(target=runThread)
+            self._threadCollect.start()
+        else:
+            self.builder.get_object('btnAdd').set_label('Start')
+            ## Stop data collection
+            self._threadCollect.join()
+
+
+    def addNewEntry(self):
         # bFieldX = float(self.builder.get_object('bField_x').get_text())
         # bFieldY = float(self.builder.get_object('bField_y').get_text())
         # bFieldZ = float(self.builder.get_object('bField_z').get_text())
@@ -280,6 +309,7 @@ class SnapperWidget(Gtk.Window):
         bFieldY = self.bField['y']
         bFieldZ = self.bField['z']
         bFieldMagnitude = self.bField['intensity']
+        
         locId = int(self.builder.get_object('locId').get_text())
 
 
@@ -396,12 +426,9 @@ class SnapperWidget(Gtk.Window):
         self.builder.get_object('statusbar1').push(0, 'The prediction is: %s' % prediction)
 
 
-
-
-if __name__ == "__main__":
+def runMain():
     def configLogging():
         logging.getLogger('').handlers = []
-
         logging.basicConfig(
             # filename = "a.log",
             # filemode="w",
@@ -410,3 +437,7 @@ if __name__ == "__main__":
     configLogging()
     app = SnapperWidget()
     Gtk.main()
+
+
+if __name__ == "__main__":
+    runMain()

@@ -8,4 +8,12 @@
 # http://www.opensource.org/licenses/MIT-license
 # Copyright (c) 2014 Joel Tong me@joeltong.org
 
-__version__ = "0.1.3"
+from preggy import expect
+
+from tests.base import TestCase
+
+
+class VersionTestCase(TestCase):
+    def test_has_proper_version(self):
+        # expect(__version__).to_equal("0.1.0")
+        pass

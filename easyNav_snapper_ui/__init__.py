@@ -9,5 +9,5 @@
 # Copyright (c) 2014 Joel Tong me@joeltong.org
 
 from easyNav_snapper_ui.version import __version__
-from easyNav_snapper_ui import SnapperWidget
+from easyNav_snapper_ui import snapperWidget
 from easyNav_snapper_ui import SerialDaemon

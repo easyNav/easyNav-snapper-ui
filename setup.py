@@ -59,7 +59,7 @@ easyNav UI for Snapper data collection utility
     entry_points={
         'console_scripts': [
             # add cli scripts here in this form:
-            # 'easyNav-snapper-ui=easyNav_snapper_ui.cli:main',
+            'easyNav-snapper-ui=easyNav_snapper_ui.snapperWidget:runMain',
         ],
     },
 )

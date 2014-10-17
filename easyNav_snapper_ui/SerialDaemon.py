@@ -10,6 +10,7 @@
 
 
 import serial
+from serial import SerialException
 import time
 import math
 import logging
@@ -29,7 +30,12 @@ class SerialDaemon:
 
 
     def start(self):
-        self._ser = serial.Serial('/dev/rfcomm0', 115200)
+        try:
+            self._ser = serial.Serial('/dev/rfcomm0', 115200)
+        except SerialException as e:
+            logging.error('Cannot open Serial port for B Field. Running without it.')
+        else:
+            self._ser = None
         self._active = True
 
         ## Run tick thread
@@ -45,12 +51,18 @@ class SerialDaemon:
     def stop(self):
         self._active = False
         self._threadListen.join()
-        self._ser.close()
+        if (self._ser != None):
+            self._ser.close()
         logging.info('Serial Daemon: Thread stopped.')
 
 
     def _tick(self):
-        raw = self._ser.readline()
+        raw = '0,0,0,0,0'
+        if (self._ser != None):
+            try:
+                raw = self._ser.readline()
+            except SerialException as e:
+                pass
         parsed = raw.split(',')
         x = self.x = float(parsed[2])
         y = self.y = float(parsed[3])

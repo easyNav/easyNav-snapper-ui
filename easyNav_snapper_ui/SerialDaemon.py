@@ -30,12 +30,11 @@ class SerialDaemon:
 
 
     def start(self):
+        self._ser = None
         try:
             self._ser = serial.Serial('/dev/rfcomm0', 115200)
         except SerialException as e:
             logging.error('Cannot open Serial port for B Field. Running without it.')
-        else:
-            self._ser = None
         self._active = True
 
         ## Run tick thread
@@ -62,6 +61,7 @@ class SerialDaemon:
             try:
                 raw = self._ser.readline()
             except SerialException as e:
+                logging.error('Serial - unable to read data')
                 pass
         parsed = raw.split(',')
         x = self.x = float(parsed[2])

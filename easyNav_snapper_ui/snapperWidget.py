@@ -357,7 +357,7 @@ class SnapperWidget(Gtk.Window):
         cache_size=int(self.builder.get_object('svmCache').get_text())
         class_weight=None
         coef0=0.0
-        degree=3
+        degree=int(self.builder.get_object('svmDegree').get_text())
         gamma=float(self.builder.get_object('svmGamma').get_text())
         kernel=str(self.builder.get_object('svmKernel').get_text())
         max_iter=-1

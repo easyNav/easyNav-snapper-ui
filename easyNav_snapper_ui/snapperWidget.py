@@ -315,7 +315,9 @@ class SnapperWidget(Gtk.Window):
 
         ## Get B Field Data
         bFieldData = {
-            'bField': bFieldMagnitude
+            'bField': bFieldMagnitude,
+            'bFieldX': self.bField['x'],
+            'bFieldY': self.bField['y']
         }
 
         ## Get network data
@@ -401,7 +403,9 @@ class SnapperWidget(Gtk.Window):
         # bFieldMagnitude = float(self.builder.get_object('bField_norm').get_text())
         bFieldMagnitude = self.bField['intensity']
         bFieldData = {
-            'bField': bFieldMagnitude
+            'bField': bFieldMagnitude,
+            'bFieldX': self.bField['x'],
+            'bFieldY': self.bField['y']
         }
 
         ## Get network data

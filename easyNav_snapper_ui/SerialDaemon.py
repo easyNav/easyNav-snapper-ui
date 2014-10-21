@@ -29,10 +29,28 @@ class SerialDaemon:
         self.x, self.y, self.z, self.intensity = 0,0,0,0
 
 
+    def configure(self, port='/dev/rfcomm0', sensorToUse='phone'):
+        """Sets configuration parameters
+        """
+        if (port, sensorToUse == 'phone'):
+            self._config = {
+                'sensor': 'phone',
+                'port': port,
+                'baudrate': 115200
+            }
+        elif (sensorToUse == 'shoe'):
+            self._config = {
+                'sensor': 'shoe',
+                'port': port,
+                'baudrate': 57600
+            }
+
+
     def start(self):
         self._ser = None
+        logging.info("PORT: %s" % self._config['port'])
         try:
-            self._ser = serial.Serial('/dev/rfcomm0', 115200)
+            self._ser = serial.Serial(self._config['port'], self._config['baudrate'])
         except SerialException as e:
             logging.error('Cannot open Serial port for B Field. Running without it.')
         self._active = True
@@ -41,6 +59,8 @@ class SerialDaemon:
         def runThread():
             while(self._active):
                 self._tick()
+                if (self._ser == None):
+                    time.sleep(1) # To prevent overheating due to loop re-entry
 
         self._threadListen = threading.Thread(target=runThread)
         self._threadListen.start()

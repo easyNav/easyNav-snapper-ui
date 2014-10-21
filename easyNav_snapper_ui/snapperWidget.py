@@ -47,6 +47,7 @@ class SnapperWidget(Gtk.Window):
 
         ## Attach data handlers
         self._attachHandlers()
+        sd.configure()
         sd.start()
         swd.start()
 
@@ -349,44 +350,55 @@ class SnapperWidget(Gtk.Window):
     def on_btnTrain_clicked(self, args):
         """ Train button 
         """
-        neighbors = int(self.builder.get_object('entryNeighbors').get_text())
 
-        # Train using KNN -----
-        self.snapper.train(neighbors)
-        # Train using SVM -----
+        choice = 'KNN'
+        ## Get selection
+        if (self.builder.get_object('radioKNN').get_active()):
+            choice = 'KNN'
+        else:
+            choice = 'SVM'
 
-        C=int(self.builder.get_object('svmC').get_text())
-        cache_size=int(self.builder.get_object('svmCache').get_text())
-        class_weight=None
-        coef0=0.0
-        degree=int(self.builder.get_object('svmDegree').get_text())
-        gamma=float(self.builder.get_object('svmGamma').get_text())
-        kernel=str(self.builder.get_object('svmKernel').get_text())
-        max_iter=-1
-        probability=False
-        random_state=None
-        shrinking=True
-        tol=float(self.builder.get_object('svmTol').get_text())
-        verbose=False
+        if (choice == 'KNN'):
+            # Train using KNN -----
+            neighbors = int(self.builder.get_object('entryNeighbors').get_text())
+            self.snapper.train(neighbors)
 
-        # self.snapper.trainSVM(
-        #     C=C,
-        #     cache_size=cache_size, 
-        #     class_weight=class_weight,
-        #     coef0=coef0, 
-        #     degree=degree, 
-        #     gamma=gamma, 
-        #     kernel=kernel, 
-        #     max_iter=max_iter,
-        #     probability=probability, 
-        #     random_state=random_state, 
-        #     shrinking=shrinking, 
-        #     tol=tol, 
-        #     verbose=verbose)
+            self.builder.get_object('statusbar1').push(
+                0, 'Trained KNN model with N=%s' % neighbors)
+        else:
+            # Train using SVM -----
+            C=int(self.builder.get_object('svmC').get_text())
+            cache_size=int(self.builder.get_object('svmCache').get_text())
+            class_weight=None
+            coef0=0.0
+            degree=int(self.builder.get_object('svmDegree').get_text())
+            gamma=float(self.builder.get_object('svmGamma').get_text())
+            kernel=str(self.builder.get_object('svmKernel').get_text())
+            max_iter=-1
+            probability=False
+            random_state=None
+            shrinking=True
+            tol=float(self.builder.get_object('svmTol').get_text())
+            verbose=False
 
-        # self.builder.get_object('statusbar1').push(
-        #     0, 'Trained model with C=%s cache=%s gamma=%s ker=%s tol=%s' % 
-        #     (C, cache_size, gamma, kernel, tol ))
+            self.snapper.trainSVM(
+                C=C,
+                cache_size=cache_size, 
+                class_weight=class_weight,
+                coef0=coef0, 
+                degree=degree, 
+                gamma=gamma, 
+                kernel=kernel, 
+                max_iter=max_iter,
+                probability=probability, 
+                random_state=random_state, 
+                shrinking=shrinking, 
+                tol=tol, 
+                verbose=verbose)
+
+            self.builder.get_object('statusbar1').push(
+                0, 'Trained SVM model with C=%s cache=%s gamma=%s ker=%s tol=%s' % 
+                (C, cache_size, gamma, kernel, tol ))
 
 
     def on_btnPredict_clicked(self, args):
@@ -428,6 +440,27 @@ class SnapperWidget(Gtk.Window):
         logging.info('Predicted: %s' % item)
 
         self.builder.get_object('statusbar1').push(0, 'The prediction is: %s' % prediction)
+
+
+    def on_btnSerialConnect_clicked(self, args):
+        """Connect Serial button handler
+        """
+        sensorType = 'phone'
+        port = str(self.builder.get_object('fieldSerialPort').get_text())
+        if (self.builder.get_object('radioSensorPhone')):
+            sensorType = 'phone'
+        else:
+            sensorType = 'shoe'
+        self.sd.stop()
+        self.sd.configure(port, sensorType)
+        self.sd.start()
+        self.builder.get_object('statusbar1').push(0, 'Serial port=%s type=%s started.' % (port, sensorType))
+
+
+    def on_btnSerialDisconnect_clicked(self, args):
+        self.sd.stop()
+        self.builder.get_object('statusbar1').push(0, 'Serial port stopped.')
+
 
 
 def runMain():

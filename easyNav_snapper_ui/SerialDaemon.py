@@ -29,10 +29,12 @@ class SerialDaemon:
         self.x, self.y, self.z, self.intensity = 0,0,0,0
 
 
+
+
     def configure(self, port='/dev/rfcomm0', sensorToUse='phone'):
         """Sets configuration parameters
         """
-        if (port, sensorToUse == 'phone'):
+        if (sensorToUse == 'phone'):
             self._config = {
                 'sensor': 'phone',
                 'port': port,
@@ -44,6 +46,8 @@ class SerialDaemon:
                 'port': port,
                 'baudrate': 57600
             }
+
+        print self._config
 
 
     def start(self):
@@ -84,9 +88,20 @@ class SerialDaemon:
                 logging.error('Serial - unable to read data')
                 pass
         parsed = raw.split(',')
-        x = self.x = float(parsed[2])
-        y = self.y = float(parsed[3])
-        z = self.z = float(parsed[4])
+
+        x,y,z = 0,0,0
+        if (self._config['sensor'] == 'phone'):
+            x = self.x = float(parsed[2])
+            y = self.y = float(parsed[3])
+            z = self.z = float(parsed[4])
+        else: #shoe
+            #YPRMfssT=,1.67,-53.00,12.33,1.08,0.01,0.11,-0.99,8.00,0,1,
+            x = self.x = float(parsed[1])
+            y = self.y = float(parsed[2])
+            z = self.z = float(parsed[3])
+
+        # logging.info(x,y,z)
+
         self.intensity = (x**2  +y**2 + z**2)**0.5
         smokesignal.emit('onData', self.x, self.y, self.z, self.intensity)
 

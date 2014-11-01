@@ -14,6 +14,7 @@ import logging
 import threading
 import smokesignal
 import time
+import pydash
 
 from easyNav_snapper import Snapper
 from SerialDaemon import SerialDaemon
@@ -21,6 +22,9 @@ from easyNav_sensors_wifi import SensorWifiDaemon
 
 
 GObject.threads_init()
+
+# WIFI RSSI Threshold to use, before network is included in
+# feature set
 
 
 class SnapperWidget(Gtk.Window):
@@ -43,7 +47,7 @@ class SnapperWidget(Gtk.Window):
 
         ## For wifi stuff 
         self.networksLock = threading.Lock() # make wifi data atomic
-        swd = self.swd = SensorWifiDaemon(interval=1.0, interface='wlan0')
+        swd = self.swd = SensorWifiDaemon(interval=4.0, interface='wlan0')
 
         ## Attach data handlers
         self._attachHandlers()
@@ -60,6 +64,10 @@ class SnapperWidget(Gtk.Window):
         tree = self.builder.get_object('treeview3')
         tree.set_model(self.store)
 
+
+        # For thresholds
+        self.WIFI_RSSI_THRESHOLD = 0
+        self.THRESHOLD_MIN_NETWORKS = 0
 
         ## for B field details.  This is needed to prevent the delay observed on reading
         ## from text field.
@@ -147,7 +155,10 @@ class SnapperWidget(Gtk.Window):
             result = {}
             for n in networks:
                 essid = str(n['Address']) 
-                result[essid] = int(n['Quality'])
+                quality = int(n['Quality'])
+                # If less than threshold, do not include!
+                if (quality >= self.WIFI_RSSI_THRESHOLD):
+                    result[essid] = quality
 
             ## Write data to atomic self.networks
             self.networksLock.acquire()
@@ -264,6 +275,17 @@ class SnapperWidget(Gtk.Window):
         chooser_dialog.destroy()
 
 
+    def on_btnUpdateThresholds_clicked(self, args):
+        """Button handler to update thresholds 
+        """
+        wifi_threshold = int(self.builder.get_object('fieldThresholdRssi').get_text())
+        minNetwork_threshold = int(self.builder.get_object('fieldMinNetwork').get_text())
+        self.WIFI_RSSI_THRESHOLD = wifi_threshold
+        self.THRESHOLD_MIN_NETWORKS = minNetwork_threshold
+        logging.debug("WIFI_RSSI_THRESHOLD: %s, THRESHOLD_MIN_NETWORKS: %s" % (self.WIFI_RSSI_THRESHOLD, self.THRESHOLD_MIN_NETWORKS))
+        self.builder.get_object('statusbar1').push(0, 'Updated thresholds.')
+
+
     def on_btnWifiUpdate_clicked(self, args):
         """ Button to update wifi interval and port 
         """
@@ -301,6 +323,8 @@ class SnapperWidget(Gtk.Window):
 
 
     def addNewEntry(self):
+        """ Helper function to add new entry.
+        """
         # bFieldX = float(self.builder.get_object('bField_x').get_text())
         # bFieldY = float(self.builder.get_object('bField_y').get_text())
         # bFieldZ = float(self.builder.get_object('bField_z').get_text())
@@ -318,7 +342,8 @@ class SnapperWidget(Gtk.Window):
         bFieldData = {
             'bField': bFieldMagnitude,
             'bFieldX': self.bField['x'],
-            'bFieldY': self.bField['y']
+            'bFieldY': self.bField['y'],
+            'bFieldz': self.bField['z']
         }
 
         ## Get network data
@@ -327,8 +352,20 @@ class SnapperWidget(Gtk.Window):
         networkData = self.networks
         self.networksLock.release()
 
+        # Do not add data entry if number of networks
+        # is too small.  This is needed to avoid diluting
+        # feature set.
+        if ( len(networkData) < self.THRESHOLD_MIN_NETWORKS):
+            return
+
+        # Do not add if no network data
+        if ( len(networkData) == 0):
+            return
+
         ## Get combined data 
+        ## TODO: Uncomment this line for B field inclusion
         combinedData = dict(bFieldData.items() + networkData.items())
+        combinedData = networkData
 
 
         item = {
@@ -417,7 +454,8 @@ class SnapperWidget(Gtk.Window):
         bFieldData = {
             'bField': bFieldMagnitude,
             'bFieldX': self.bField['x'],
-            'bFieldY': self.bField['y']
+            'bFieldY': self.bField['y'],
+            'bFieldZ': self.bField['z']
         }
 
         ## Get network data
@@ -428,7 +466,9 @@ class SnapperWidget(Gtk.Window):
         # print networkData
 
         ## Get combined data 
+        ## TODO: Uncomment this line for B field inclusion
         combinedData = dict(bFieldData.items() + networkData.items())
+        combinedData = networkData
 
         ## Merge combined data
         for k in keys:
@@ -438,6 +478,7 @@ class SnapperWidget(Gtk.Window):
         prediction = self.snapper.predict(item)
 
         logging.info('Predicted: %s' % item)
+        logging.info('Prediction: %s' % prediction)
 
         self.builder.get_object('statusbar1').push(0, 'The prediction is: %s' % prediction)
 
@@ -447,7 +488,7 @@ class SnapperWidget(Gtk.Window):
         """
         sensorType = 'phone'
         port = str(self.builder.get_object('fieldSerialPort').get_text())
-        if (self.builder.get_object('radioSensorPhone')):
+        if (self.builder.get_object('radioSensorPhone').get_active()):
             sensorType = 'phone'
         else:
             sensorType = 'shoe'

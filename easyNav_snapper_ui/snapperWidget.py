@@ -46,8 +46,9 @@ class SnapperWidget(Gtk.Window):
         sd = self.sd = SerialDaemon()
 
         ## For wifi stuff 
+        self.WIFI_STABLIZATION_TIME = 4
         self.networksLock = threading.Lock() # make wifi data atomic
-        swd = self.swd = SensorWifiDaemon(interval=4.0, interface='wlan0')
+        swd = self.swd = SensorWifiDaemon(interval=self.WIFI_STABLIZATION_TIME, interface='wlan0')
 
         ## Attach data handlers
         self._attachHandlers()
@@ -289,7 +290,7 @@ class SnapperWidget(Gtk.Window):
     def on_btnWifiUpdate_clicked(self, args):
         """ Button to update wifi interval and port 
         """
-        wifiInterval = float(self.builder.get_object('wifiInterval').get_text())
+        self.WIFI_STABLIZATION_TIME = wifiInterval = float(self.builder.get_object('wifiInterval').get_text())
         wifiPort = str(self.builder.get_object('wifiPort').get_text())
         self.swd.updateConfig(wifiInterval, wifiPort)
         self.builder.get_object('statusbar1').push(
@@ -303,10 +304,17 @@ class SnapperWidget(Gtk.Window):
         """
         ## Run tick thread
         def runThread():
+            _refTime = time.time()
             while(self._isCollecting):
-                self.addNewEntry()
-                time.sleep(1)
-                print 'tick..'
+                # If it is not the right time, 
+                # do not execute
+                if ((time.time() - _refTime) < self.WIFI_STABLIZATION_TIME):
+                    time.sleep(0.05)
+                else:
+                    ## Reset reference time
+                    _refTime = time.time()
+                    self.addNewEntry()
+                    print 'tick..'
             print 'stopped thread.'
 
         self._isCollecting = not self._isCollecting
@@ -342,8 +350,8 @@ class SnapperWidget(Gtk.Window):
         bFieldData = {
             'bField': bFieldMagnitude,
             'bFieldX': self.bField['x'],
-            'bFieldY': self.bField['y'],
-            'bFieldz': self.bField['z']
+            'bFieldY': self.bField['y']
+            # 'bFieldz': self.bField['z']
         }
 
         ## Get network data
@@ -365,7 +373,9 @@ class SnapperWidget(Gtk.Window):
         ## Get combined data 
         ## TODO: Uncomment this line for B field inclusion
         combinedData = dict(bFieldData.items() + networkData.items())
-        combinedData = networkData
+
+        ## Uncomment this line to only get network data
+        # combinedData = networkData
 
 
         item = {
@@ -454,8 +464,8 @@ class SnapperWidget(Gtk.Window):
         bFieldData = {
             'bField': bFieldMagnitude,
             'bFieldX': self.bField['x'],
-            'bFieldY': self.bField['y'],
-            'bFieldZ': self.bField['z']
+            'bFieldY': self.bField['y']
+            # 'bFieldZ': self.bField['z']
         }
 
         ## Get network data
@@ -468,6 +478,8 @@ class SnapperWidget(Gtk.Window):
         ## Get combined data 
         ## TODO: Uncomment this line for B field inclusion
         combinedData = dict(bFieldData.items() + networkData.items())
+
+        ## Uncomment line below to get only network data.
         combinedData = networkData
 
         ## Merge combined data

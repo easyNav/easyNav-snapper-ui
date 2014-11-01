@@ -405,13 +405,16 @@ class SnapperWidget(Gtk.Window):
         else:
             choice = 'SVM'
 
+        ## Number of clusters to use for feature reduction
+        n_clusters = int(self.builder.get_object('entryClusters').get_text())
+
         if (choice == 'KNN'):
             # Train using KNN -----
             neighbors = int(self.builder.get_object('entryNeighbors').get_text())
-            self.snapper.train(neighbors)
+            self.snapper.trainKNN(n_clusters, neighbors)
 
             self.builder.get_object('statusbar1').push(
-                0, 'Trained KNN model with N=%s' % neighbors)
+                0, 'Trained KNN model with N=%s Clusters=%s' % (neighbors, n_clusters))
         else:
             # Train using SVM -----
             C=int(self.builder.get_object('svmC').get_text())
@@ -429,6 +432,7 @@ class SnapperWidget(Gtk.Window):
             verbose=False
 
             self.snapper.trainSVM(
+                n_clusters=n_clusters,
                 C=C,
                 cache_size=cache_size, 
                 class_weight=class_weight,
@@ -444,8 +448,8 @@ class SnapperWidget(Gtk.Window):
                 verbose=verbose)
 
             self.builder.get_object('statusbar1').push(
-                0, 'Trained SVM model with C=%s cache=%s gamma=%s ker=%s tol=%s' % 
-                (C, cache_size, gamma, kernel, tol ))
+                0, 'Trained SVM model with C=%s cache=%s gamma=%s ker=%s tol=%s Clusters=%s' % 
+                (C, cache_size, gamma, kernel, tol, n_clusters ))
 
 
     def on_btnPredict_clicked(self, args):
